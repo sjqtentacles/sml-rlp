@@ -23,6 +23,10 @@ val encNested = encode (List [List [Bytes "\000"], List [], List []])
 val decoded = decode encStr
 (* => Bytes "dog" *)
 
+(* Total variant: NONE on malformed input instead of raising *)
+val ok  = decodeOpt encStr   (* SOME (Bytes "dog") *)
+val bad = decodeOpt ""       (* NONE *)
+
 val (List [Bytes cat, Bytes dog]) = decode encList
 
 (* Helper: encode a non-negative integer as minimal big-endian bytes *)

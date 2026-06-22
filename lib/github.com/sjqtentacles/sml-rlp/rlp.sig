@@ -14,6 +14,12 @@ sig
      Raises Fail if the input is malformed. *)
   val decode : string -> value
 
+  (* Total variant of [decode]: returns NONE instead of raising on malformed
+     input (truncated, trailing bytes, bad length prefix, ...).
+     decodeOpt (encode v) = SOME v, and decodeOpt s = SOME (decode s) whenever
+     [decode s] succeeds. *)
+  val decodeOpt : string -> value option
+
   (* Encode a non-negative big integer as RLP bytes (big-endian, no leading zeros).
      Integer 0 encodes as empty bytes (0x80). *)
   val encodeBigInt : IntInf.int -> string

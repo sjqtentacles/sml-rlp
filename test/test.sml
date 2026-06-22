@@ -226,6 +226,43 @@ struct
       Harness.checkRaises "encodeBigInt negative raises"
         (fn () => encodeBigInt (IntInf.fromInt ~1));
 
+      (* ---- Section 7: decodeOpt (total decode) ---- *)
+      Harness.section "decodeOpt";
+
+      (* 32. decodeOpt of valid input = SOME (same as decode) *)
+      Harness.check "decodeOpt valid bytes = SOME (decode ...)"
+        (decodeOpt (byte83 ^ "dog") = SOME (decode (byte83 ^ "dog")));
+      Harness.check "decodeOpt empty bytes = SOME (Bytes \"\")"
+        (decodeOpt byte80 = SOME (Bytes ""));
+      Harness.check "decodeOpt [cat, dog] = SOME list"
+        (decodeOpt (byteC8 ^ String.str (Char.chr 131) ^ "cat" ^
+                              String.str (Char.chr 131) ^ "dog")
+         = SOME (List [Bytes "cat", Bytes "dog"]));
+
+      (* 33. decodeOpt of malformed input = NONE (instead of raising) *)
+      Harness.check "decodeOpt empty string = NONE"
+        (decodeOpt "" = NONE);
+      Harness.check "decodeOpt truncated = NONE"
+        (decodeOpt (byte83 ^ "do") = NONE);
+      Harness.check "decodeOpt trailing bytes = NONE"
+        (decodeOpt (byte80 ^ String.str (Char.chr 0)) = NONE);
+      (* a long-string header claiming more bytes than present *)
+      Harness.check "decodeOpt bad length prefix = NONE"
+        (decodeOpt (byteB8 ^ String.str (Char.chr 56) ^ "short") = NONE);
+
+      (* 34. round-trip: decodeOpt (encode v) = SOME v *)
+      Harness.check "decodeOpt (encode loremIpsum) = SOME (Bytes loremIpsum)"
+        (decodeOpt (encode (Bytes loremIpsum)) = SOME (Bytes loremIpsum));
+      let
+        val nested = List [ List []
+                          , List [List []]
+                          , List [List [], List [List []]]
+                          ]
+      in
+        Harness.check "decodeOpt (encode nested) = SOME nested"
+          (decodeOpt (encode nested) = SOME nested)
+      end;
+
       Harness.run ()
     end
 

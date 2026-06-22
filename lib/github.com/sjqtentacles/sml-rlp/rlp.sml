@@ -174,6 +174,11 @@ struct
       else v
     end
 
+  (* Total wrapper: any malformed input (the Fail raised by decode/substr, or a
+     Subscript/Overflow from an out-of-range length prefix) becomes NONE. *)
+  fun decodeOpt (s : string) : value option =
+    SOME (decode s) handle _ => NONE
+
   (* ------------------------------------------------------------------ *)
   (* BigInt encode/decode                                                 *)
   (* ------------------------------------------------------------------ *)
