@@ -33,6 +33,33 @@ val (List [Bytes cat, Bytes dog]) = decode encList
 val encInt = encode (Bytes (bigIntToBytes (IntInf.fromInt 1000)))
 ```
 
+## Example
+
+`make example` builds and runs [`examples/demo.sml`](examples/demo.sml), which
+encodes and decodes RLP values — a short string, the canonical
+`["cat","dog"]` list example, and a round trip through `encodeBigInt`/
+`decodeBigInt` and `decodeOpt` (output is byte-identical under MLton and
+Poly/ML):
+
+```
+Encode a single short string "cat":
+  83636174
+
+Encode the canonical list ["cat","dog"]:
+  c88363617483646f67  (9 bytes)
+
+Decode it back:
+  List ["cat", "dog"]
+
+Big-integer round trip via encodeBigInt/decodeBigInt:
+  0 -> 0x80 -> 0
+  1024 -> 0x820400 -> 1024
+  65535 -> 0x82ffff -> 65535
+
+decodeOpt on malformed input:
+  decodeOpt "" = NONE
+```
+
 ## Testing
 
 ```
