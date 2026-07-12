@@ -1,3 +1,4 @@
 name: sml-rlp
 version: 0.1.0
 packages:
+  - github.com/sjqtentacles/sml-check

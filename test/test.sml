@@ -263,6 +263,73 @@ struct
           (decodeOpt (encode nested) = SOME nested)
       end;
 
+      (* ---- Section 8: sml-check properties ---- *)
+      Harness.section "sml-check properties";
+
+      (* An arbitrary-byte string generator: RLP `Bytes` carry raw bytes, not
+         text, so we exercise the full 0..255 range rather than printable
+         ASCII only. *)
+      let
+        val genByte = Check.charRange (Char.chr 0, Char.chr 255)
+        val genBytesStr = Check.stringOf genByte
+
+        (* A recursive `value` generator over Bytes/List, depth-capped via
+           Check.sized so encode/decode nesting stays small and fast. *)
+        fun genValueAt 0 = Check.map Bytes genBytesStr
+          | genValueAt d =
+              Check.oneof
+                [ Check.map Bytes genBytesStr
+                , Check.map List (Check.listOf (genValueAt (d - 1)))
+                ]
+        val genValue = Check.sized (fn n => genValueAt (Int.min (n, 3)))
+
+        fun showValue (Bytes s) = "Bytes(" ^ hexOf s ^ ")"
+          | showValue (List vs) = "[" ^ String.concatWith "," (List.map showValue vs) ^ "]"
+
+        (* 35. decode (encode v) = v for a recursive Bytes/List value. *)
+        val () =
+          Harness.check "prop: decode (encode v) = v"
+            (case Check.quickCheck
+                    (Check.forAll genValue showValue
+                       (fn v => decode (encode v) = v)) of
+                 Check.Passed _ => true
+               | Check.Failed _ => false)
+
+        (* 36. decodeOpt (encode v) = SOME v for a recursive Bytes/List value. *)
+        val () =
+          Harness.check "prop: decodeOpt (encode v) = SOME v"
+            (case Check.quickCheck
+                    (Check.forAll genValue showValue
+                       (fn v => decodeOpt (encode v) = SOME v)) of
+                 Check.Passed _ => true
+               | Check.Failed _ => false)
+
+        (* 37. decodeOpt is total: it never raises, even on arbitrary
+           (almost certainly malformed) byte strings. *)
+        val () =
+          Harness.check "prop: decodeOpt never raises on arbitrary input"
+            (case Check.quickCheck
+                    (Check.forAll genBytesStr (fn s => hexOf s)
+                       (fn s => (ignore (decodeOpt s); true) handle _ => false)) of
+                 Check.Passed _ => true
+               | Check.Failed _ => false)
+
+        (* 38. decodeBigInt (encodeBigInt n) = n for non-negative n (kept
+           within MLton's 31-bit default `int` bound before lifting to
+           IntInf, since Check.choose itself operates on native `int`). *)
+        val genNonNegBigInt =
+          Check.map IntInf.fromInt (Check.choose (0, 1000000000))
+        val () =
+          Harness.check "prop: decodeBigInt (encodeBigInt n) = n"
+            (case Check.quickCheck
+                    (Check.forAll genNonNegBigInt IntInf.toString
+                       (fn n => decodeBigInt (encodeBigInt n) = n)) of
+                 Check.Passed _ => true
+               | Check.Failed _ => false)
+      in
+        ()
+      end;
+
       Harness.run ()
     end
 
