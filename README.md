@@ -1,5 +1,7 @@
 # sml-rlp
 
+[![CI](https://github.com/sjqtentacles/sml-rlp/actions/workflows/ci.yml/badge.svg)](https://github.com/sjqtentacles/sml-rlp/actions/workflows/ci.yml)
+
 Recursive Length Prefix (RLP) encoder/decoder for Ethereum in pure Standard ML
 
 ## Installation
